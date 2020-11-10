@@ -13,10 +13,12 @@ var (
 	fSf           = fmt.Sprintf
 	fEf           = fmt.Errorf
 	sHasPrefix    = strings.HasPrefix
+	sJoin         = strings.Join
 	sTrim         = strings.Trim
 	sTrimLeft     = strings.TrimLeft
 	sTrimRight    = strings.TrimRight
 	sReplaceAll   = strings.ReplaceAll
+	sIndex        = strings.Index
 	sLastIndex    = strings.LastIndex
 	rxMustCompile = regexp.MustCompile
 	failOnErr     = fn.FailOnErr

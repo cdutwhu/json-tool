@@ -61,7 +61,8 @@ func TestJSONBlkCont(t *testing.T) {
 	out := MkSglEleBlk(name, "~~~", true)
 	fPln(out)
 
-	xstr := Cvt2XML(out)
+	mav := map[string]interface{}{"a": "b"}
+	xstr := Cvt2XML(out, mav)
 	fPln(xstr)
 
 	// names, values := JSONBreakBlkCont(cont)

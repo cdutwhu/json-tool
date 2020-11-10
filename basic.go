@@ -23,7 +23,7 @@ func Fmt(jstr, indent string) string {
 }
 
 // Cvt2XML :
-func Cvt2XML(jstr string) string {
+func Cvt2XML(jstr string, mav map[string]interface{}) string {
 	var jmap interface{}
 	json.Unmarshal([]byte(jstr), &jmap)
 	bytes, err := mxj.AnyXmlIndent(jmap, "", "    ", "")
@@ -31,5 +31,15 @@ func Cvt2XML(jstr string) string {
 	xstr := string(bytes)
 	xstr = sReplaceAll(xstr, "<>", "")
 	xstr = sReplaceAll(xstr, "</>", "")
-	return sTrim(xstr, " \t\n")
+	xstr = sTrim(xstr, " \t\n")
+
+	attrs := []string{}
+	for a, v := range mav {
+		attrs = append(attrs, fSf(`%s="%v"`, a, v))
+	}
+	if p := sIndex(xstr, ">"); len(attrs) > 0 {
+		xstr = xstr[:p] + " " + sJoin(attrs, " ") + xstr[p:]
+	}
+
+	return xstr
 }
