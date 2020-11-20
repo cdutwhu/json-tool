@@ -46,3 +46,31 @@ func SglEleBlkCont(jstr string) (string, string) {
 	ebIdx := sLastIndex(jstr, "}")
 	return jstr[qtIdx1+1 : qtIdx2], sTrimRight(jstr[qtIdx2+3:ebIdx], " \t\n\r")
 }
+
+// SglEleAttrVal : attributes MUST be ahead of other sub-elements
+func SglEleAttrVal(jstr, attr, attrprefix string) (val string, ok bool) {
+	lookfor := fSf(`%s%s`, attrprefix, attr)
+	dqGrp := []int{}
+SCAN:
+	for i := 0; i < len(jstr); i++ {
+		switch jstr[i] {
+		case '}':
+			break SCAN
+		case '"':
+			dqGrp = append(dqGrp, i)
+		}
+	}
+	dqV1, dqV2 := 0, 0
+	for i := 0; i < len(dqGrp); i += 2 {
+		dq1, dq2 := dqGrp[i], dqGrp[i+1]
+		if jstr[dq1+1:dq2] == lookfor {
+			dqV1, dqV2 = dqGrp[i+2], dqGrp[i+3]
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return "", ok
+	}
+	return jstr[dqV1+1 : dqV2], ok
+}

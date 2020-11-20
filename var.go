@@ -12,7 +12,6 @@ var (
 	fPln          = fmt.Println
 	fSf           = fmt.Sprintf
 	fEf           = fmt.Errorf
-	sHasPrefix    = strings.HasPrefix
 	sJoin         = strings.Join
 	sTrim         = strings.Trim
 	sTrimLeft     = strings.TrimLeft
@@ -20,6 +19,8 @@ var (
 	sReplaceAll   = strings.ReplaceAll
 	sIndex        = strings.Index
 	sLastIndex    = strings.LastIndex
+	sHasPrefix    = strings.HasPrefix
+	sHasSuffix    = strings.HasSuffix
 	rxMustCompile = regexp.MustCompile
 	failOnErr     = fn.FailOnErr
 	failOnErrWhen = fn.FailOnErrWhen

@@ -53,6 +53,9 @@ func TestJSONBlkCont(t *testing.T) {
 		}
 	  }`
 
+	val, ok := SglEleAttrVal(jstr, "RefId", "-")
+	fPln(val, ok)
+
 	name, cont := SglEleBlkCont(jstr)
 	fPln("root", name)
 	fPln(cont)
