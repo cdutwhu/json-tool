@@ -13,33 +13,33 @@ func IsValid(str string) bool {
 }
 
 // Fmt :
-func Fmt(jstr, indent string) string {
-	// jmap := make(map[string]interface{})
-	var jmap interface{}
-	json.Unmarshal([]byte(jstr), &jmap)
-	bytes, err := json.MarshalIndent(&jmap, "", indent)
+func Fmt(jsonstr, indent string) string {
+	// jsonmap := make(map[string]interface{})
+	var jsonmap interface{}
+	json.Unmarshal([]byte(jsonstr), &jsonmap)
+	bytes, err := json.MarshalIndent(&jsonmap, "", indent)
 	failOnErr("%v", err)
 	return string(bytes)
 }
 
 // Cvt2XML :
-func Cvt2XML(jstr string, mav map[string]interface{}) string {
-	var jmap interface{}
-	json.Unmarshal([]byte(jstr), &jmap)
-	bytes, err := mxj.AnyXmlIndent(jmap, "", "    ", "")
+func Cvt2XML(jsonstr string, mav map[string]interface{}) string {
+	var jsonmap interface{}
+	json.Unmarshal([]byte(jsonstr), &jsonmap)
+	bytes, err := mxj.AnyXmlIndent(jsonmap, "", "    ", "")
 	failOnErr("%v", err)
-	xstr := string(bytes)
-	xstr = sReplaceAll(xstr, "<>", "")
-	xstr = sReplaceAll(xstr, "</>", "")
-	xstr = sTrim(xstr, " \t\n")
+	xmlstr := string(bytes)
+	xmlstr = sReplaceAll(xmlstr, "<>", "")
+	xmlstr = sReplaceAll(xmlstr, "</>", "")
+	xmlstr = sTrim(xmlstr, " \t\n")
 
 	attrs := []string{}
 	for a, v := range mav {
 		attrs = append(attrs, fSf(`%s="%v"`, a, v))
 	}
-	if p := sIndex(xstr, ">"); len(attrs) > 0 {
-		xstr = xstr[:p] + " " + sJoin(attrs, " ") + xstr[p:]
+	if p := sIndex(xmlstr, ">"); len(attrs) > 0 {
+		xmlstr = xmlstr[:p] + " " + sJoin(attrs, " ") + xmlstr[p:]
 	}
 
-	return xstr
+	return xmlstr
 }
