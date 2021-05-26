@@ -184,6 +184,7 @@ func ScanArrayObject(r io.Reader, jsonChk bool) (<-chan ResultOfAOScan, bool) {
 	ja := true
 
 	go func() {
+		defer close(chRst)
 
 		lbbChecked := false
 		N := 0

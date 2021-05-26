@@ -87,6 +87,7 @@ func TestScanArray2Objects(t *testing.T) {
 	if chRst, ja := ScanArrayObject(file, true); !ja {
 		fPln("NOT JSON array")
 	} else {
+
 		I := 1
 		for rst := range chRst {
 			fPln(I)
@@ -94,5 +95,16 @@ func TestScanArray2Objects(t *testing.T) {
 			fPln(rst.Err)
 			I++
 		}
+
+		// for {
+		// 	if rst, more := <-chRst; more {
+		// 		fPln(I)
+		// 		fPln(rst.Obj)
+		// 		fPln(rst.Err)
+		// 		I++
+		// 	} else {
+		// 		break
+		// 	}
+		// }
 	}
 }
