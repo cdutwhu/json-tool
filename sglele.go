@@ -11,16 +11,17 @@ func Root(jsonstr string) string {
 // LIKE { "only-one-element": { ... } }
 func MkSglEleBlk(name string, value interface{}, fmt bool) string {
 	// string type value to be added "quotes"
-	switch value.(type) {
+	switch vt := value.(type) {
 	case string:
-		sValue := value.(string)
-		if !(len(sValue) >= 2 && (sValue[0] == '{' || sValue[0] == '[')) {
-			value = fSf(`"%s"`, sTrim(sValue, `"`))
+		if !(len(vt) >= 2 && (vt[0] == '{' || vt[0] == '[')) {
+			value = fSf(`"%s"`, sTrim(vt, `"`))
 		}
+	case nil:
+		value = "null"
 	}
 
 	jsonstr := fSf(`{ "%s": %v }`, name, value)
-	// failOnErrWhen(!IsValid(jsonstr), "%v", fEf("Err In Making JSON Block")) // test mode open
+	failOnErrWhen(!IsValid(jsonstr), "%v", fEf("Error in Making JSON Block")) // test mode open
 	if fmt {
 		return Fmt(jsonstr, "  ")
 	}

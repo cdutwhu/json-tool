@@ -35,3 +35,7 @@ func TestJSONBlkCont(t *testing.T) {
 	// 	fPln(i, name, ":", values[i])
 	// }
 }
+
+func TestMkSglEleBlk(t *testing.T) {
+	fPln(MkSglEleBlk("name", nil, true))
+}

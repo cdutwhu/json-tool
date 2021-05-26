@@ -9,16 +9,7 @@
     "Name": "",
     "Age": "50"
   },
-  {
-    "Id": 3,
-    "Name": "Test1",
-    "Age": ""
-  },
-  {
-    "Id": 4,
-    "Name": "Test2",
-    "Age": "50"
-  },
+  {    "Id": 3,    "Name": "Test1",    "Age": ""  },  {    "Id": 4,    "Name": "Test2",    "Age": "50",    "sub": {      "Id": 6   }  },
   {
     "Id": 5,
     "Name": "[\"\"abc]",

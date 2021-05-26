@@ -35,3 +35,64 @@ func TestJSONBreakBlkContV2(t *testing.T) {
 		}
 	}
 }
+
+func Test_detectLCB(t *testing.T) {
+	type args struct {
+		line string
+	}
+	tests := []struct {
+		name string
+		args args
+		want int
+	}{
+		// TODO: Add test cases.
+		{
+			name: "OK",
+			args: args{
+				line: `"ActivityTime": {`,
+			},
+			want: 1,
+		},
+		{
+			name: "OK",
+			args: args{
+				line: `}}`,
+			},
+			want: -2,
+		},
+		{
+			name: "OK",
+			args: args{
+				line: `"-RefId": "C27E1FCF-C163{{-485F-BEF0-F36F18A0493A`,
+			},
+			want: 0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := detectLCB(tt.args.line); got != tt.want {
+				t.Errorf("detectLCB() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestScanArray2Objects(t *testing.T) {
+
+	file, err := os.OpenFile("./data/data.json", os.O_RDONLY, os.ModePerm)
+	if err != nil {
+		fPln(err)
+	}
+
+	if chRst, ja := ScanArrayObject(file, true); !ja {
+		fPln("NOT JSON array")
+	} else {
+		I := 1
+		for rst := range chRst {
+			fPln(I)
+			fPln(rst.Obj)
+			fPln(rst.Err)
+			I++
+		}
+	}
+}
