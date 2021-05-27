@@ -137,8 +137,8 @@ func BreakMulEleBlkV2(jsonstr string) (names, values []string) {
 	return
 }
 
-// detect left-curly-bracket '{', '{'->count++, '}'->count--
-func detectLCB(line string) (L int, objects []string) {
+// return after processing, Level & prev-obj tail & next-obj head & inline objects
+func analyseJL(line string, L int) (Lout int, prevTail, nextHead string, objects []string) {
 
 	var pc byte = 0
 	quotes := false
@@ -153,11 +153,17 @@ func detectLCB(line string) (L int, objects []string) {
 			L++
 			if L == 1 {
 				s, e = i, -1
+
+				if prevTail == "" {
+					prevTail = sTrimRight(line[:i], "[, \t")
+				}
 			}
 		case c == '}' && !quotes:
 			L--
 			if L == 0 {
 				e = i
+
+				nextHead = sTrimLeft(line[i+1:], "], \t")
 			}
 		}
 		pc = c
@@ -168,17 +174,51 @@ func detectLCB(line string) (L int, objects []string) {
 			s, e = -1, -1
 		}
 	}
-	return
+
+	return L, prevTail, nextHead, objects
 }
+
+// detect left-curly-bracket '{', '{'->count++, '}'->count--
+// func detectLCB(line string) (L int, objects []string) {
+
+// 	var pc byte = 0
+// 	quotes := false
+// 	s, e := -1, -1
+
+// 	for i := 0; i < len(line); i++ {
+// 		c := line[i]
+// 		switch {
+// 		case c == '"' && pc != '\\':
+// 			quotes = !quotes
+// 		case c == '{' && !quotes:
+// 			L++
+// 			if L == 1 {
+// 				s, e = i, -1
+// 			}
+// 		case c == '}' && !quotes:
+// 			L--
+// 			if L == 0 {
+// 				e = i
+// 			}
+// 		}
+// 		pc = c
+
+// 		// if got object in single line
+// 		if s > -1 && e > s {
+// 			objects = append(objects, line[s:e+1])
+// 			s, e = -1, -1
+// 		}
+// 	}
+// 	return
+// }
 
 type ResultOfAOScan struct {
 	Obj string
 	Err error
 }
 
-// ScanArrayObject : "whole formatted" OR "complete N objects" in single line
-// line length must less than 65536
-func ScanArrayObject(r io.Reader, jsonChk bool) (<-chan ResultOfAOScan, bool) {
+// ScanArrayObject : line length must less than 65536
+func ScanArrayObject(r io.Reader, jChk, jFmt bool) (<-chan ResultOfAOScan, bool) {
 
 	chRst := make(chan ResultOfAOScan)
 	ja := true
@@ -192,14 +232,25 @@ func ScanArrayObject(r io.Reader, jsonChk bool) (<-chan ResultOfAOScan, bool) {
 		sb := &strings.Builder{}
 		scanner := bufio.NewScanner(r)
 
-		fillRst := func(str string) {
+		fillRst := func(object string) {
+
+			object = sTrimLeft(object, "[ \t")
+			object = sTrimRight(object, ",] \t")
 			rst := ResultOfAOScan{}
-			if jsonChk && !IsValid(str) { // if invalid json, report it to error
-				rst.Err = fEf("Error JSON @ \n%v\n", str)
+
+			// if invalid json, report to error
+			if jChk && !IsValid(object) {
+				rst.Err = fEf("Error JSON @ \n%v\n", object)
 			}
-			if rst.Err == nil { // if valid json, record it
-				rst.Obj = str
+
+			// only record valid json
+			if rst.Err == nil {
+				if jFmt {
+					object = Fmt(object, "  ")
+				}
+				rst.Obj = object
 			}
+
 			chRst <- rst
 		}
 
@@ -207,7 +258,7 @@ func ScanArrayObject(r io.Reader, jsonChk bool) (<-chan ResultOfAOScan, bool) {
 			str := scanner.Text()
 
 			if !lbbChecked {
-				if s := sTrim(str, " \t\n"); len(s) > 0 {
+				if s := sTrim(str, " \t"); len(s) > 0 {
 					if s[0] != '[' {
 						ja = false
 						return
@@ -216,22 +267,35 @@ func ScanArrayObject(r io.Reader, jsonChk bool) (<-chan ResultOfAOScan, bool) {
 				}
 			}
 
-			L, objects := detectLCB(str)
+			L, prevTail, nextHead, objects := analyseJL(str, N)
+			N = L
+
+			if len(prevTail) > 0 {
+				sb.WriteString(prevTail)
+				fillRst(sb.String())
+				sb.Reset()
+			}
 
 			for _, object := range objects {
 				fillRst(object)
 			}
 
-			if L > 0 && N == 0 { // object starts
+			if len(nextHead) > 0 {
+				sb.WriteString(nextHead)
+				continue
+			}
+
+			// object starts
+			if L == 1 {
 				record = true
 			}
+
 			if record {
 				sb.WriteString(str)
-				sb.WriteString("\n")
-				N += L
-				if N == 0 { // object ends
-					object := sTrimRight(sb.String(), ", \t\n")
-					fillRst(object)
+
+				// object ends
+				if L == 0 {
+					fillRst(sb.String())
 					sb.Reset()
 					record = false
 				}

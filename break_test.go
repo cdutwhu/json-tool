@@ -1,6 +1,7 @@
 package jsontool
 
 import (
+	"io"
 	"os"
 	"testing"
 	"time"
@@ -36,47 +37,6 @@ func TestJSONBreakBlkContV2(t *testing.T) {
 	}
 }
 
-func Test_detectLCB(t *testing.T) {
-	type args struct {
-		line string
-	}
-	tests := []struct {
-		name string
-		args args
-		want int
-	}{
-		// TODO: Add test cases.
-		{
-			name: "OK",
-			args: args{
-				line: `"ActivityTime": {`,
-			},
-			want: 1,
-		},
-		{
-			name: "OK",
-			args: args{
-				line: `}}`,
-			},
-			want: -2,
-		},
-		{
-			name: "OK",
-			args: args{
-				line: `"-RefId": "C27E1FCF-C163{{-485F-BEF0-F36F18A0493A`,
-			},
-			want: 0,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got, _ := detectLCB(tt.args.line); got != tt.want {
-				t.Errorf("detectLCB() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestScanArray2Objects(t *testing.T) {
 
 	file, err := os.OpenFile("./data/data.json", os.O_RDONLY, os.ModePerm)
@@ -84,7 +44,7 @@ func TestScanArray2Objects(t *testing.T) {
 		fPln(err)
 	}
 
-	if chRst, ja := ScanArrayObject(file, true); !ja {
+	if chRst, ja := ScanArrayObject(file, true, false); !ja {
 		fPln("NOT JSON array")
 	} else {
 
@@ -92,7 +52,9 @@ func TestScanArray2Objects(t *testing.T) {
 		for rst := range chRst {
 			fPln(I)
 			fPln(rst.Obj)
-			fPln(rst.Err)
+			if rst.Err != nil {
+				panic("Not Valid@" + rst.Err.Error())
+			}
 			I++
 		}
 
@@ -107,4 +69,38 @@ func TestScanArray2Objects(t *testing.T) {
 		// 	}
 		// }
 	}
+
+	file.Seek(0, io.SeekStart)
+
+	if chRst, ja := ScanArrayObject(file, true, true); !ja {
+		fPln("NOT JSON array")
+	} else {
+
+		I := 1
+		for rst := range chRst {
+			fPln(I)
+			fPln(rst.Obj)
+			if rst.Err != nil {
+				panic("Not Valid@" + rst.Err.Error())
+			}
+			I++
+		}
+	}
+}
+
+func Test_analyse(t *testing.T) {
+
+	l1 := `[  {`
+	l2 := `"Id": 1,`
+	l3 := ` "Name": "Ahmad,Ahmad",`
+	l4 := `"Age": "21"`
+	l5 := `  },  {"Id": 2,    "Name": "","Age": "50"},{"Id": 3,"Name": "Test1","Age": ""},  {`
+	l6 := `"Id": 4 } ]`
+
+	fPln(analyseJL(l1, 0))
+	fPln(analyseJL(l2, 1))
+	fPln(analyseJL(l3, 1))
+	fPln(analyseJL(l4, 1))
+	fPln(analyseJL(l5, 1))
+	fPln(analyseJL(l6, 1))
 }
