@@ -2,8 +2,10 @@ package jsontool
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/clbanning/mxj"
+	"github.com/digisan/gotk/slice/tu8"
 )
 
 // IsValid :
@@ -20,6 +22,32 @@ func Fmt(jsonstr, indent string) string {
 	bytes, err := json.MarshalIndent(&jsonmap, "", indent)
 	failOnErr("%v", err)
 	return string(bytes)
+}
+
+// Minimize :
+func Minimize(jsonstr string) string {
+
+	sb := &strings.Builder{}
+	var pc byte = 0
+	quotes := false
+
+	for i := 0; i < len(jsonstr); i++ {
+		c := jsonstr[i]
+		switch {
+		case c == '"' && pc != '\\':
+			quotes = !quotes
+			sb.WriteByte(c)
+		case !quotes:
+			if tu8.NotIn(c, ' ', '\t', '\n', '\r') {
+				sb.WriteByte(c)
+			}
+		case quotes:
+			sb.WriteByte(c)
+		}
+		pc = c
+	}
+
+	return sb.String()
 }
 
 // Cvt2XML :

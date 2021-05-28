@@ -217,8 +217,16 @@ type ResultOfAOScan struct {
 	Err error
 }
 
+type ScanOutType int
+
+const (
+	SOT_ORI ScanOutType = 0
+	SOT_FMT ScanOutType = 1
+	SOT_MIN ScanOutType = 2
+)
+
 // ScanArrayObject : line length must less than 65536
-func ScanArrayObject(r io.Reader, jChk, jFmt bool) (<-chan ResultOfAOScan, bool) {
+func ScanArrayObject(r io.Reader, jChk bool, oType ScanOutType) (<-chan ResultOfAOScan, bool) {
 
 	chRst := make(chan ResultOfAOScan)
 	ja := true
@@ -245,8 +253,13 @@ func ScanArrayObject(r io.Reader, jChk, jFmt bool) (<-chan ResultOfAOScan, bool)
 
 			// only record valid json
 			if rst.Err == nil {
-				if jFmt {
+				switch oType {
+				case SOT_ORI:
+					break
+				case SOT_FMT:
 					object = Fmt(object, "  ")
+				case SOT_MIN:
+					object = Minimize(object)
 				}
 				rst.Obj = object
 			}

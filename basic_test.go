@@ -28,3 +28,30 @@ func TestIsValid(t *testing.T) {
 		return nil
 	})
 }
+
+func TestMinimize(t *testing.T) {
+	type args struct {
+		jsonstr string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		// TODO: Add test cases.
+		{
+			name: "OK",
+			args: args {
+				jsonstr: `{    "Id": 1,    "Name": "Ahmad,   Ahmad", "Age": "2	1" 		 }`,
+			},
+			want: `{"Id":1,"Name":"Ahmad,   Ahmad","Age":"2	1"}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Minimize(tt.args.jsonstr); got != tt.want {
+				t.Errorf("Minimize() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

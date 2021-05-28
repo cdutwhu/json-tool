@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cdutwhu/gotil/misc"
+	"github.com/digisan/gotk"
 )
 
 func TestJSONBlkCont(t *testing.T) {
-	defer misc.TrackTime(time.Now())
+	defer gotk.TrackTime(time.Now())
 
 	bytes, err := os.ReadFile("./data/Activity.json")
 	failOnErr("%v", err)

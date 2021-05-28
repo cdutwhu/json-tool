@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cdutwhu/gotil/misc"
+	"github.com/digisan/gotk"
 )
 
 func TestJSONBreakArrCont(t *testing.T) {
-	defer misc.TrackTime(time.Now())
+	defer gotk.TrackTime(time.Now())
 
 	bytes, err := os.ReadFile("./data/Activities.json")
 	failOnErr("%v", err)
@@ -24,7 +24,8 @@ func TestJSONBreakArrCont(t *testing.T) {
 }
 
 func TestJSONBreakBlkContV2(t *testing.T) {
-	defer misc.TrackTime(time.Now())
+	defer gotk.TrackTime(time.Now())
+
 	if bytes, err := os.ReadFile("./why.json"); err == nil {
 		// jsonstr := JSONBlkFmt(string(bytes), "  ")
 		jsonstr := string(bytes)
@@ -44,7 +45,7 @@ func TestScanArray2Objects(t *testing.T) {
 		fPln(err)
 	}
 
-	if chRst, ja := ScanArrayObject(file, true, false); !ja {
+	if chRst, ja := ScanArrayObject(file, true, SOT_ORI); !ja {
 		fPln("NOT JSON array")
 	} else {
 
@@ -72,7 +73,24 @@ func TestScanArray2Objects(t *testing.T) {
 
 	file.Seek(0, io.SeekStart)
 
-	if chRst, ja := ScanArrayObject(file, true, true); !ja {
+	if chRst, ja := ScanArrayObject(file, true, SOT_FMT); !ja {
+		fPln("NOT JSON array")
+	} else {
+
+		I := 1
+		for rst := range chRst {
+			fPln(I)
+			fPln(rst.Obj)
+			if rst.Err != nil {
+				panic("Not Valid@" + rst.Err.Error())
+			}
+			I++
+		}
+	}
+
+	file.Seek(0, io.SeekStart)
+
+	if chRst, ja := ScanArrayObject(file, true, SOT_MIN); !ja {
 		fPln("NOT JSON array")
 	} else {
 
