@@ -1,12 +1,12 @@
 package jsontool
 
 import (
-	"io"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/digisan/gotk"
+	gotkio "github.com/digisan/gotk/io"
 )
 
 func TestJSONBreakArrCont(t *testing.T) {
@@ -40,22 +40,29 @@ func TestJSONBreakBlkContV2(t *testing.T) {
 
 func TestScanArray2Objects(t *testing.T) {
 
+	// file, err := os.OpenFile("/home/qmiao/Desktop/rrd.json", os.O_RDONLY, os.ModePerm)
 	file, err := os.OpenFile("./data/data.json", os.O_RDONLY, os.ModePerm)
 	if err != nil {
 		fPln(err)
 	}
 
-	if chRst, ja := ScanArrayObject(file, true, SOT_ORI); !ja {
+	if chRst, ja := ScanArrayObject(file, true, SO_MIN); !ja {
 		fPln("NOT JSON array")
 	} else {
 
 		I := 1
 		for rst := range chRst {
-			fPln(I)
-			fPln(rst.Obj)
+
 			if rst.Err != nil {
 				panic("Not Valid@" + rst.Err.Error())
 			}
+
+			if I > 0 {
+				fPln(I)
+				// fPln(rst.Obj)
+				gotkio.MustWriteFile(fSf("dump%02d.json", I), []byte(rst.Obj))
+			}
+
 			I++
 		}
 
@@ -69,40 +76,6 @@ func TestScanArray2Objects(t *testing.T) {
 		// 		break
 		// 	}
 		// }
-	}
-
-	file.Seek(0, io.SeekStart)
-
-	if chRst, ja := ScanArrayObject(file, true, SOT_FMT); !ja {
-		fPln("NOT JSON array")
-	} else {
-
-		I := 1
-		for rst := range chRst {
-			fPln(I)
-			fPln(rst.Obj)
-			if rst.Err != nil {
-				panic("Not Valid@" + rst.Err.Error())
-			}
-			I++
-		}
-	}
-
-	file.Seek(0, io.SeekStart)
-
-	if chRst, ja := ScanArrayObject(file, true, SOT_MIN); !ja {
-		fPln("NOT JSON array")
-	} else {
-
-		I := 1
-		for rst := range chRst {
-			fPln(I)
-			fPln(rst.Obj)
-			if rst.Err != nil {
-				panic("Not Valid@" + rst.Err.Error())
-			}
-			I++
-		}
 	}
 }
 

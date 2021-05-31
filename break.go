@@ -2,6 +2,7 @@ package jsontool
 
 import (
 	"bufio"
+	"bytes"
 	"io"
 	"strings"
 	"time"
@@ -143,6 +144,7 @@ func analyseJL(line string, L int) (Lout int, prevTail, nextHead string, objects
 	var pc byte = 0
 	quotes := false
 	s, e := -1, -1
+	gotPrevTail := false
 
 	for i := 0; i < len(line); i++ {
 		c := line[i]
@@ -154,8 +156,9 @@ func analyseJL(line string, L int) (Lout int, prevTail, nextHead string, objects
 			if L == 1 {
 				s, e = i, -1
 
-				if prevTail == "" {
+				if !gotPrevTail {
 					prevTail = sTrimRight(line[:i], "[, \t")
+					gotPrevTail = true
 				}
 			}
 		case c == '}' && !quotes:
@@ -220,12 +223,12 @@ type ResultOfAOScan struct {
 type ScanOutType int
 
 const (
-	SOT_ORI ScanOutType = 0
-	SOT_FMT ScanOutType = 1
-	SOT_MIN ScanOutType = 2
+	SO_ORI ScanOutType = 0
+	SO_FMT ScanOutType = 1
+	SO_MIN ScanOutType = 2
 )
 
-// ScanArrayObject : line length must less than 65536
+// ScanArrayObject : any format json array should be OK.
 func ScanArrayObject(r io.Reader, jChk bool, oType ScanOutType) (<-chan ResultOfAOScan, bool) {
 
 	chRst := make(chan ResultOfAOScan)
@@ -234,11 +237,20 @@ func ScanArrayObject(r io.Reader, jChk bool, oType ScanOutType) (<-chan ResultOf
 	go func() {
 		defer close(chRst)
 
-		lbbChecked := false
-		N := 0
-		record := false
-		sb := &strings.Builder{}
-		scanner := bufio.NewScanner(r)
+		const (
+			SCAN_STEP = bufio.MaxScanTokenSize
+		)
+
+		var (
+			lbbChecked  = false
+			N           = 0
+			record      = false
+			sbObject    = &strings.Builder{}
+			partialLong = false
+			sbLine      = &strings.Builder{}
+			scanner     = bufio.NewScanner(r)
+			scanBuf     = make([]byte, SCAN_STEP)
+		)
 
 		fillRst := func(object string) {
 
@@ -254,11 +266,11 @@ func ScanArrayObject(r io.Reader, jChk bool, oType ScanOutType) (<-chan ResultOf
 			// only record valid json
 			if rst.Err == nil {
 				switch oType {
-				case SOT_ORI:
+				case SO_ORI:
 					break
-				case SOT_FMT:
+				case SO_FMT:
 					object = Fmt(object, "  ")
-				case SOT_MIN:
+				case SO_MIN:
 					object = Minimize(object)
 				}
 				rst.Obj = object
@@ -267,26 +279,27 @@ func ScanArrayObject(r io.Reader, jChk bool, oType ScanOutType) (<-chan ResultOf
 			chRst <- rst
 		}
 
-		for scanner.Scan() {
-			str := scanner.Text()
+		lineToRst := func(line string) {
 
-			if !lbbChecked {
-				if s := sTrim(str, " \t"); len(s) > 0 {
-					if s[0] != '[' {
-						ja = false
-						return
-					}
-					lbbChecked = true
-				}
+			// if partialLong, only inflate sbLine, return
+			if partialLong {
+				sbLine.WriteString(line)
+				return
 			}
 
-			L, prevTail, nextHead, objects := analyseJL(str, N)
-			N = L
+			// if not partialLong, and sbLine has content, modify input line
+			if sbLine.Len() > 0 {
+				line = sbLine.String() + line
+				defer sbLine.Reset()
+			}
+
+			L, prevTail, nextHead, objects := analyseJL(line, N)
+			defer func() { N = L }()
 
 			if len(prevTail) > 0 {
-				sb.WriteString(prevTail)
-				fillRst(sb.String())
-				sb.Reset()
+				sbObject.WriteString(prevTail)
+				fillRst(sbObject.String())
+				sbObject.Reset()
 			}
 
 			for _, object := range objects {
@@ -294,25 +307,83 @@ func ScanArrayObject(r io.Reader, jChk bool, oType ScanOutType) (<-chan ResultOf
 			}
 
 			if len(nextHead) > 0 {
-				sb.WriteString(nextHead)
-				continue
+				sbObject.WriteString(nextHead)
+				record = true
+				return
 			}
 
 			// object starts
-			if L == 1 {
+			if N == 0 && L > 0 {
 				record = true
 			}
 
+			// if L == 1 {
+			// 	record = true
+			// }
+
 			if record {
-				sb.WriteString(str)
+				sbObject.WriteString(line)
 
 				// object ends
 				if L == 0 {
-					fillRst(sb.String())
-					sb.Reset()
+					fillRst(sbObject.String())
+					sbObject.Reset()
 					record = false
 				}
 			}
+		}
+
+		split := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+
+			// DEBUG++
+			// if DEBUG >= 1 {
+			// 	fPln("why?")
+			// }
+
+			if atEOF && len(data) == 0 {
+				return 0, nil, nil
+			}
+
+			if atEOF {
+				return len(data), data, nil
+			}
+
+			partialLong = false
+			advance = bytes.Index(data, []byte{'\n'})
+
+			switch {
+
+			case advance == -1 && cap(data) < SCAN_STEP: // didn't find, then expand to max cap
+				return 0, nil, nil
+
+			case advance == -1 && len(data) == SCAN_STEP: // didn't find, even if got max cap. ingest all
+				partialLong = true
+				return SCAN_STEP, data, nil
+
+			case advance == -1 && len(data) < SCAN_STEP: // didn't find, got part when at max cap. ingest it & close long line.
+				return len(data), data, nil
+
+			default: // found
+				return advance + 1, data[:advance], nil
+			}
+
+		}
+
+		scanner.Buffer(scanBuf, SCAN_STEP)
+		scanner.Split(split)
+
+		for scanner.Scan() {
+			line := scanner.Text()
+			if !lbbChecked {
+				if s := sTrim(line, " \t"); len(s) > 0 {
+					if s[0] != '[' {
+						ja = false
+						return
+					}
+					lbbChecked = true
+				}
+			}
+			lineToRst(line)
 		}
 	}()
 

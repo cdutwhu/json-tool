@@ -25,3 +25,7 @@ var (
 	failOnErr     = fn.FailOnErr
 	failOnErrWhen = fn.FailOnErrWhen
 )
+
+var (
+	DEBUG = 0
+)
