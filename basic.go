@@ -27,9 +27,11 @@ func Fmt(jsonstr, indent string) string {
 // Minimize :
 func Minimize(jsonstr string) string {
 
-	sb := &strings.Builder{}
-	var pc byte = 0
-	quotes := false
+	var (
+		sb     = &strings.Builder{}
+		pc     = byte(0)
+		quotes = false
+	)
 
 	for i := 0; i < len(jsonstr); i++ {
 		c := jsonstr[i]
@@ -52,6 +54,7 @@ func Minimize(jsonstr string) string {
 
 // Cvt2XML :
 func Cvt2XML(jsonstr string, mav map[string]interface{}) string {
+
 	var jsonmap interface{}
 	json.Unmarshal([]byte(jsonstr), &jsonmap)
 	bytes, err := mxj.AnyXmlIndent(jsonmap, "", "    ", "")

@@ -317,10 +317,6 @@ func ScanArrayObject(r io.Reader, jChk bool, oType ScanOutType) (<-chan ResultOf
 				record = true
 			}
 
-			// if L == 1 {
-			// 	record = true
-			// }
-
 			if record {
 				sbObject.WriteString(line)
 
