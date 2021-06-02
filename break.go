@@ -229,8 +229,8 @@ const (
 	OUT_MIN OutStyle = 2
 )
 
-// ScanArrayObject : any format json array should be OK.
-func ScanArrayObject(r io.Reader, check bool, style OutStyle) (<-chan ResultOfScan, bool) {
+// ScanObject : any format json array should be OK.
+func ScanObject(r io.Reader, mustarray, check bool, style OutStyle) (<-chan ResultOfScan, bool) {
 
 	var (
 		chRst = make(chan ResultOfScan)
@@ -391,7 +391,9 @@ func ScanArrayObject(r io.Reader, check bool, style OutStyle) (<-chan ResultOfSc
 				if s := sTrim(line, " \t"); len(s) > 0 {
 					if s[0] != '[' {
 						ja = false
-						return
+						if mustarray {
+							return // if not json array, do not ingest
+						}
 					}
 					lbbChecked = true
 				}
