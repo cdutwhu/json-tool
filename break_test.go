@@ -41,12 +41,12 @@ func TestJSONBreakBlkContV2(t *testing.T) {
 func TestScanArray2Objects(t *testing.T) {
 
 	// file, err := os.OpenFile("/home/qmiao/Desktop/rrd.json", os.O_RDONLY, os.ModePerm)
-	file, err := os.OpenFile("./data/data.json", os.O_RDONLY, os.ModePerm)
+	file, err := os.OpenFile("./data/otflevel.json", os.O_RDONLY, os.ModePerm)
 	if err != nil {
 		fPln(err)
 	}
 
-	if chRst, ja := ScanArrayObject(file, true, SO_MIN); !ja {
+	if chRst, ja := ScanArrayObject(file, true, OUT_MIN); !ja {
 		fPln("NOT JSON array")
 	} else {
 

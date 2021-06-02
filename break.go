@@ -215,27 +215,32 @@ func analyseJL(line string, L int) (Lout int, prevTail, nextHead string, objects
 // 	return
 // }
 
-type ResultOfAOScan struct {
-	Obj string
-	Err error
-}
-
-type ScanOutType int
+type (
+	ResultOfScan struct {
+		Obj string
+		Err error
+	}
+	OutStyle int
+)
 
 const (
-	SO_ORI ScanOutType = 0
-	SO_FMT ScanOutType = 1
-	SO_MIN ScanOutType = 2
+	OUT_ORI OutStyle = 0
+	OUT_FMT OutStyle = 1
+	OUT_MIN OutStyle = 2
 )
 
 // ScanArrayObject : any format json array should be OK.
-func ScanArrayObject(r io.Reader, jChk bool, oType ScanOutType) (<-chan ResultOfAOScan, bool) {
+func ScanArrayObject(r io.Reader, check bool, style OutStyle) (<-chan ResultOfScan, bool) {
 
-	chRst := make(chan ResultOfAOScan)
-	ja := true
+	var (
+		chRst = make(chan ResultOfScan)
+		ja    = true
+	)
 
 	go func() {
-		defer close(chRst)
+		defer func() {
+			close(chRst)
+		}()
 
 		const (
 			SCAN_STEP = bufio.MaxScanTokenSize
@@ -256,21 +261,21 @@ func ScanArrayObject(r io.Reader, jChk bool, oType ScanOutType) (<-chan ResultOf
 
 			object = sTrimLeft(object, "[ \t")
 			object = sTrimRight(object, ",] \t")
-			rst := ResultOfAOScan{}
+			rst := ResultOfScan{}
 
 			// if invalid json, report to error
-			if jChk && !IsValid(object) {
+			if check && !IsValid(object) {
 				rst.Err = fEf("Error JSON @ \n%v\n", object)
 			}
 
 			// only record valid json
 			if rst.Err == nil {
-				switch oType {
-				case SO_ORI:
+				switch style {
+				case OUT_ORI:
 					break
-				case SO_FMT:
+				case OUT_FMT:
 					object = Fmt(object, "  ")
-				case SO_MIN:
+				case OUT_MIN:
 					object = Minimize(object)
 				}
 				rst.Obj = object
