@@ -29,3 +29,11 @@ var (
 var (
 	DEBUG = 0
 )
+
+// dropCR drops a terminal \r from the data.
+var dropCR = func(data []byte) []byte {
+	if len(data) > 0 && data[len(data)-1] == '\r' {
+		return data[0 : len(data)-1]
+	}
+	return data
+}

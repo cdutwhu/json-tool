@@ -341,33 +341,45 @@ func ScanArrayObject(r io.Reader, check bool, style OutStyle) (<-chan ResultOfSc
 			// 	fPln("why?")
 			// }
 
-			if atEOF && len(data) == 0 {
-				return 0, nil, nil
-			}
+			////////////////////////////////////////////////////////////////
 
-			if atEOF {
-				return len(data), data, nil
-			}
+			// if atEOF && len(data) == 0 {
+			// 	return 0, nil, nil
+			// }
+			// if i := bytes.IndexByte(data, '\n'); i >= 0 {
+			// 	// We have a full newline-terminated line.
+			// 	return i + 1, dropCR(data[0:i]), nil
+			// }
+			// // If we're at EOF, we have a final, non-terminated line. Return it.
+			// if atEOF {
+			// 	return len(data), dropCR(data), nil
+			// }
+			// // Request more data.
+			// return 0, nil, nil
+
+			////////////////////////////////////////////////////////////////
 
 			partialLong = false
-			advance = bytes.Index(data, []byte{'\n'})
+			advance = bytes.IndexByte(data, '\n')
 
 			switch {
+
+			case atEOF && len(data) == 0:
+				return 0, nil, nil
+
+			case advance >= 0: // found
+				return advance + 1, dropCR(data[:advance]), nil
 
 			case advance == -1 && cap(data) < SCAN_STEP: // didn't find, then expand to max cap
 				return 0, nil, nil
 
 			case advance == -1 && len(data) == SCAN_STEP: // didn't find, even if got max cap. ingest all
 				partialLong = true
-				return SCAN_STEP, data, nil
+				return SCAN_STEP, dropCR(data), nil
 
-			case advance == -1 && len(data) < SCAN_STEP: // didn't find, got part when at max cap. ingest it & close long line.
-				return len(data), data, nil
-
-			default: // found
-				return advance + 1, data[:advance], nil
+			default: // case advance == -1 && len(data) < SCAN_STEP: // didn't find, got part when at max cap. ingest & close long line.
+				return len(data), dropCR(data), nil
 			}
-
 		}
 
 		scanner.Buffer(scanBuf, SCAN_STEP)
